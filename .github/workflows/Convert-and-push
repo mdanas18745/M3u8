@@ -1,0 +1,43 @@
+name: Clone 5-Segment M3U8 and Push as New HLS
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/5 * * * *' # Every 5 minutes
+
+jobs:
+  clone_hls:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install FFmpeg
+        run: |
+          sudo apt update
+          sudo apt install -y ffmpeg
+
+      - name: Create new 5-segment HLS clone
+        run: |
+          mkdir -p output-hls
+          ffmpeg -y -i "https://cdn.vaanam24.com/STARSPORTSTAMIL1/index.m3u8" \
+            -c copy \
+            -f hls \
+            -hls_time 6 \
+            -hls_list_size 5 \
+            -hls_flags delete_segments+append_list+independent_segments \
+            -hls_segment_filename "output-hls/segment_%03d.ts" \
+            output-hls/stream.m3u8
+
+      - name: Git commit cloned HLS output
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add output-hls/
+          git diff --cached --quiet || git commit -m "Push new 5-segment HLS clone [skip ci]"
+
+      - name: Push to repo
+        if: success()
+        run: |
+          git push
