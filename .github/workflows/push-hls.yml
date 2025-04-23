@@ -3,7 +3,7 @@ name: Push HLS Output Folder Only
 on:
   workflow_dispatch:
   schedule:
-    - cron: '*/5 * * * *' # Every 5 minutes
+    - cron: '*/5 * * * *'
 
 jobs:
   push_only:
@@ -12,18 +12,19 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Git
         run: |
           git config --global user.name "github-actions"
           git config --global user.email "github-actions@github.com"
 
-      - name: Commit output-hls folder
+      - name: Commit HLS output folder
         run: |
           git add output-hls/
           git diff --cached --quiet || git commit -m "Push updated HLS segments only [skip ci]"
 
-      - name: Push to repository
-        if: success()
+      - name: Push changes
         run: |
-          git push
+          git push origin HEAD:main
